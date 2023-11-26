@@ -8,19 +8,19 @@ on:
         default: "1.73"
         required: true
 
-  schedule:
-    - cron: "0 0 * * *"
-  push:
-    paths-ignore: 
-      - 'README.md'
-      - '.github/**'
-    branches: [ master ]
-    
-  pull_request:
-    paths-ignore: 
-      - 'README.md'
-      - '.github/**'
-    branches: [ master ]
+#  schedule:
+#    - cron: "0 0 * * *"
+#  push:
+#    paths-ignore: 
+#      - 'README.md'
+#      - '.github/**'
+#    branches: [ master ]
+#    
+#  pull_request:
+#    paths-ignore: 
+#      - 'README.md'
+#      - '.github/**'
+#    branches: [ master ]
 
 env:
   CARGO_TERM_COLOR: always
