@@ -155,7 +155,7 @@ jobs:
 
       - name: Create Create source archive
         continue-on-error: true
-        uses: deep-soft/zip-release@main
+        uses: deep-soft/zip-release@v2
         with:
           type: 'tar.xz'
           filename: "${{ env.PROG_NAME }}-src-${{ env.VERSION }}-${{ matrix.job.target }}-${{ env.GUI }}-${{ matrix.job.os }}"
