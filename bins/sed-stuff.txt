@@ -1,0 +1,10 @@
+#BOF#
+# sed-stuff.txt
+# 2023.11.25 15:50
+
+#1
+S:accept_suffix: vec!\[\"mp3\", \"wav\", \"flac\", \"ts\"\],
+R:accept_suffix: vec!\[\"mp3\", \"wav\", \"flac\", \"ts\", \"m4a\", \"mkv\", \"m3u\", \"\*\"\],
+F:src/ui/fs.rs
+
+#EOF#
