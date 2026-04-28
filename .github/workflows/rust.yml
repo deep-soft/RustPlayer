@@ -4,16 +4,16 @@ on:
   workflow_dispatch:
     inputs:
       RUST_TOOLCHAIN:
-        description: RUST_TOOLCHAIN (stable or 1.73)
-        default: "1.73"
+        description: RUST_TOOLCHAIN (stable or 1.89)
+        default: "1.89"
         required: true
 
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 0 1 * *"
   push:
     paths-ignore: 
       - 'README.md'
-      - '.github/**'
+      # - '.github/**'
     branches: [ master ]
 
   pull_request:
@@ -24,9 +24,9 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  VCPKG_COMMIT_ID: 06c79a9afa6f99f02f44d20df9e0848b2a56bf1b
+  VCPKG_COMMIT_ID: 365f6444ab40ee87c73c947b475b3a267b3cb77c
   TAG_NAME: latest
-  VERSION: "1.1.2"
+  VERSION: "1.1.4"
   
 jobs:
   build:
@@ -35,62 +35,69 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, macOS-latest] 
+        os: [ubuntu-22.04, macOS-latest, macOS-15-intel] 
         include:
-          - name: linux
-            os: ubuntu-20.04
+          - name: ubuntu
+            os: ubuntu-22.04
             artifact_name: target/release/RustPlayer
             asset_name: RustPlayer-linux-amd64
           - name: macos
             os: macOS-latest
             artifact_name: target/release/RustPlayer
-            asset_name: RustPlayer-macos
+            asset_name: RustPlayer-macos-arm64
+          - name: macos
+            os: macOS-15-intel
+            artifact_name: target/release/RustPlayer
+            asset_name: RustPlayer-macos-x64
     steps:
     - uses: actions/checkout@v2
-    - name: patch dynamic build
-      run: git apply dynamic-lib.patch
+      with:
+        submodules: 'recursive'
+    # - name: patch dynamic build
+    #   run: git apply dynamic-lib.patch
 
     - run: rustup toolchain install ${{ inputs.RUST_TOOLCHAIN }} --profile minimal
     - uses: Swatinem/rust-cache@v2
 
-    - name: install deps for linux
-      if: matrix.os == 'ubuntu-20.04'
-      run: sudo apt update && sudo apt install -y libasound2-dev libavcodec-dev libavformat-dev libswresample-dev libavutil-dev libavformat-dev pkg-config
-        
-    - name: install ffmpeg deps for macOS
-      if: matrix.os == 'macOS-latest'
-      run: brew install ffmpeg pkg-config && brew link ffmpeg
+    - name: Install macos deps
+      if: matrix.name == 'macos'
+      run: |
+        brew update
+        brew install nasm yasm
 
-    - name: Install cargo bundle
-      if: matrix.os == 'ubuntu-20.04'
+    - name: Install cargo bundle and deps
+      if: matrix.name == 'ubuntu'
       shell: bash
       run: |
+        sudo apt update -y
+        sudo apt-get install -y pkg-config libasound2-dev libssl-dev libclang-dev nasm yasm
+        
         pushd /tmp
-        git clone https://github.com/KetaDotCC/cargo-bundle
+        git clone https://github.com/burtonageo/cargo-bundle
           pushd cargo-bundle
             cargo install --path .
           popd
         popd
 
     - name: build RustPlayer for macOS
-      if: matrix.os == 'macOS-latest'
+      if: matrix.name == 'macos'
       run: cargo build --release
 
     - name: build RustPlayer for Linux
-      if: matrix.os == 'ubuntu-20.04'
+      if: matrix.name == 'ubuntu'
       run: cargo bundle --release
 
     - name: bundle RustPlayer for macOS
-      if: matrix.os == 'macOS-latest'
+      if: matrix.name == 'macos'
       run: |
         # npm install --global create-dmg
         # for name in target/release/bundle/osx/*.app; do
         #   create-dmg $name || true
         # done
-        mv target/release/rustplayer rustplayer-binary-macos
+        mv target/release/rustplayer ${{ matrix.asset_name }}-${{ env.VERSION }}.out
 
     - name: Publish Release for linux
-      if: matrix.os == 'ubuntu-20.04'
+      if: matrix.name == 'ubuntu'
       uses: softprops/action-gh-release@v1
       with:
         prerelease: true
@@ -99,22 +106,22 @@ jobs:
           target/release/bundle/deb/*.deb
 
     - name: Publish Release for macos
-      if: matrix.os == 'macOS-latest'
+      if: matrix.name == 'macos'
       uses: softprops/action-gh-release@v1
       with:
         prerelease: true
         tag_name: ${{ env.TAG_NAME }}
         files: |
-          rustplayer-binary-macos
+          ${{ matrix.asset_name }}-${{ env.VERSION }}.out
 
   build-on-windows:
-    runs-on: windows-latest
+    runs-on: windows-2022
     continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { sys: mingw64, env: x86_64, artifact_name: target/release/RustPlayer.exe , asset_name: RustPlayer-windows-x86_64.exe }
+          - { sys: msvc, env: x86_64, artifact_name: target/release/RustPlayer.exe , asset_name: RustPlayer-windows-x86_64.exe }
           # - { sys: mingw32, env: i686, artifact_name: target/release/RustPlayer.exe , asset_name: RustPlayer-windows-x86.exe }
           # - { sys: ucrt64,  env: ucrt-x86_64 }  # Experimental!
           # - { sys: clang64, env: clang-x86_64 } # Experimental!
@@ -123,24 +130,26 @@ jobs:
     #     shell: msys2 {0}
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
+    - uses: ilammy/msvc-dev-cmd@v1
     - run: rustup toolchain install ${{ inputs.RUST_TOOLCHAIN }} --profile minimal
     - uses: Swatinem/rust-cache@v2
 
     - name: setup vcpkg (do not install any package)
-      uses: lukka/run-vcpkg@v10
+      uses: lukka/run-vcpkg@v11
       with:
         vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
 
     - name: build RustPlayer
-      shell: bash
       run: |
-        $VCPKG_ROOT/vcpkg install ffmpeg:x64-windows-static-md
+        vcpkg install ffmpeg:x64-windows-static-md
         cargo build --release
 
     - name: rename
       shell: bash
       run: |
-        mv target/release/rustplayer.exe target/release/rustplayer-${{ env.VERSION }}.exe
+        mv target/release/rustplayer.exe target/release/rustplayer-${{ matrix.sys }}-${{ matrix.env }}-${{ env.VERSION }}.exe
 
     - name: Publish Release
       uses: softprops/action-gh-release@v1

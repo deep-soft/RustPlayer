@@ -1,9 +1,9 @@
 [package]
 name = "rustplayer"
-version = "1.1.2"
+version = "1.1.4"
 edition = "2021"
 description = "Music/Radio Player built by Rust"
-authors = ["KetaNetwork"]
+authors = ["Kingtous"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -11,9 +11,9 @@ authors = ["KetaNetwork"]
 rand = "0.8.5"
 
 tui = "0.19.0"
-crossterm = "0.25.0"
+crossterm = "0.29.0"
 
-rodio = { version = "0.17", features = ["mp3", "wav", "flac"] }
+rodio = { version = "0.21", features = ["mp3", "wav", "flac"] }
 mp3-duration = "0.1.10"
 
 failure = "0.1.8"
@@ -23,7 +23,7 @@ open = "2.1.0"
 regex = "1.5.4"
 
 reqwest = { version = "0.11", features = ["json"] }
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1.47", features = ["full"] }
 
 m3u8-rs = "3.0.0"
 dirs = "4.0.0"
@@ -34,18 +34,18 @@ lazy_static = "1.4.0"
 
 [package.metadata.bundle]
 name = "RustPlayer"
-identifier = "cc.ketanetwork.rustplayer"
+identifier = "com.kingtous.rustplayer"
 # icon = ["32x32.png", "128x128.png", "128x128@2x.png"]
-version = "1.1.2"
+version = "1.1.4"
 # resources = ["assets", "images/**/*.png", "secrets/public_key.txt"]
-copyright = "Copyright (c) KetaNetwork 2023. All rights reserved."
+copyright = "Copyright (c) kingtous 2025. All rights reserved."
 category = "Music"
 short_description = "Music/Radio Player built by Rust."
 long_description = """
 Music/Radio Player built by Rust.
 """
-deb_depends = ["libasound2", "libavcodec57 | libavcodec58", "libavformat57 | libavformat58", "libswresample2 | libswresample3"]
-osx_minimum_system_version = "10.15"
+deb_depends = ["libasound2"]
+osx_minimum_system_version = "12.0"
 
 [profile]
 release = { strip = "symbols", lto = "thin", opt-level = "z" }
